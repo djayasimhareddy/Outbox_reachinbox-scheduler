@@ -16,6 +16,7 @@ interface EmailSearchDocument {
 
 // Re-reads Postgres rows before indexing. Search indexing is best-effort.
 export async function indexEmailIds(ids: string[]): Promise<void> {
+  if (!es) return;
   try {
     const chunkSize = 500;
     for (let i = 0; i < ids.length; i += chunkSize) {

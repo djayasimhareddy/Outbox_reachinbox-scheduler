@@ -1,13 +1,14 @@
 ﻿import { Client } from "@elastic/elasticsearch";
 import { config } from "../config";
 
-export const es = new Client({ node: config.ELASTIC_URL });
+export const es = config.ELASTIC_URL ? new Client({ node: config.ELASTIC_URL }) : null;
 export const EMAIL_INDEX = "emails";
 
 export async function ensureIndex(): Promise<void> {
-  const exists = await es.indices.exists({ index: EMAIL_INDEX });
-  if (exists) return;
+  if (!es) return;
   try {
+    const exists = await es.indices.exists({ index: EMAIL_INDEX });
+    if (exists) return;
     await es.indices.create({
       index: EMAIL_INDEX,
       mappings: {
@@ -26,6 +27,8 @@ export async function ensureIndex(): Promise<void> {
     });
   } catch (error) {
     const cause = error as { meta?: { body?: { error?: { type?: string } } } };
-    if (cause.meta?.body?.error?.type !== "resource_already_exists_exception") throw error;
+    if (cause.meta?.body?.error?.type !== "resource_already_exists_exception") {
+      console.error("ES index setup failed (non-fatal):", error instanceof Error ? error.message : error);
+    }
   }
 }

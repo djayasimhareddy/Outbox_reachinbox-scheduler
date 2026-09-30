@@ -2,12 +2,13 @@ import "dotenv/config";
 import { z } from "zod";
 
 const schema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(4000),
   DATABASE_URL: z.string(),
   REDIS_URL: z.string(),
-  ELASTIC_URL: z.string(),
+  ELASTIC_URL: z.string().optional(),
   JWT_SECRET: z.string().min(8),
-  FRONTEND_URL: z.string(),
+  FRONTEND_URL: z.string().transform((value) => value.replace(/\/+$/, "")),
   BACKEND_URL: z.string(),
   GOOGLE_CLIENT_ID: z.string().default(""),
   GOOGLE_CLIENT_SECRET: z.string().default(""),

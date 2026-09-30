@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { Clock, Send, ChevronDown, PenSquare, Hash } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import api from '../lib/api';
+import api, { API_URL } from '../lib/api';
 
 const LOGO = () => (
   <div className="flex items-center gap-0.5 mb-6">
@@ -59,7 +59,7 @@ const DashboardLayout: React.FC = () => {
   };
 
   const handleSlackConnect = () => {
-    window.location.href = 'http://localhost:4000/slack/connect';
+    window.location.href = `${API_URL}/slack/connect`;
   };
 
   const handleSlackDisconnect = async () => {
@@ -176,7 +176,7 @@ const DashboardLayout: React.FC = () => {
         {/* Bull Board link */}
         <div className="mt-auto pt-4 border-t border-gray-100">
           <a
-            href="http://localhost:4000/admin/queues"
+            href={`${API_URL}/admin/queues`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-50"

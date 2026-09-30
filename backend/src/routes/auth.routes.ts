@@ -25,8 +25,8 @@ router.get(
     const token = jwt.sign({ sub: user.id }, config.JWT_SECRET, { expiresIn: "7d" });
     res.cookie("token", token, {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false, // set true behind HTTPS in production
+      sameSite: config.NODE_ENV === "production" ? "none" : "lax",
+      secure: config.NODE_ENV === "production",
       maxAge: 7 * 24 * 3600 * 1000,
     });
     res.redirect(`${config.FRONTEND_URL}/dashboard`);

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Search, Filter, RefreshCw, Star, Send, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Filter, RefreshCw, Star, Send } from 'lucide-react';
 import api from '../lib/api';
 import type { Email, EmailListResponse } from '../types/api';
 
@@ -27,7 +27,7 @@ const SentEmails: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const searchTimer = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const fetchEmails = useCallback(async (pg: number, q: string, isRefresh = false) => {
     if (isRefresh) setRefreshing(true);

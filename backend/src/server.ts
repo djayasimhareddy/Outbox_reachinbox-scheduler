@@ -12,10 +12,13 @@ import emailsRouter from "./routes/emails.routes";
 import { requireAuth } from "./middleware/requireAuth";
 import { ensureIndex } from "./lib/elastic";
 import slackRouter from "./routes/slack.routes";
+import "./worker";
 
 
 const app = express();
-app.use(cors({ origin: config.FRONTEND_URL, credentials: true }));
+app.set("trust proxy", 1);
+const allowedOrigin = config.FRONTEND_URL.replace(/\/$/, "");
+app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 app.use(passport.initialize());
@@ -34,6 +37,6 @@ app.use("/slack", slackRouter);
 app.use("/api/emails", requireAuth, emailsRouter);
 
 ensureIndex().catch((error) => console.error("ES index setup failed:", error instanceof Error ? error.message : error));
-app.listen(config.PORT, () => {
+app.listen(config.PORT, "0.0.0.0", () => {
   console.log(`API on :${config.PORT}  |  Bull Board: /admin/queues`);
 });

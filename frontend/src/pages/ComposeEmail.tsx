@@ -65,7 +65,7 @@ const ComposeEmail: React.FC = () => {
   const [recipients, setRecipients] = useState<string[]>([]);
   const [recipientInput, setRecipientInput] = useState('');
   const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
+  const body = '';
   const [delaySeconds, setDelaySeconds] = useState(2);
   const [hourlyLimit, setHourlyLimit] = useState(50);
   const [startTime, setStartTime] = useState(formatLocalDatetime(new Date(Date.now() + 60_000)));

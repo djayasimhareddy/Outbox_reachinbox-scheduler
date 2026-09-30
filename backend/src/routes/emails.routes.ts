@@ -105,6 +105,41 @@ const searchSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+async function searchPostgres(userId: string, q: string | undefined, status: string | undefined, page: number, limit: number) {
+  const statuses: EmailStatus[] | undefined = status
+    ? status === "scheduled" ? ["SCHEDULED", "PROCESSING"] : ["SENT", "FAILED"]
+    : undefined;
+  const where = {
+    userId,
+    ...(statuses ? { status: { in: statuses } } : {}),
+    ...(q ? {
+      OR: [
+        { subject: { contains: q, mode: "insensitive" as const } },
+        { body: { contains: q, mode: "insensitive" as const } },
+        { toEmail: { contains: q, mode: "insensitive" as const } },
+      ],
+    } : {}),
+  };
+  const [data, total] = await Promise.all([
+    prisma.email.findMany({
+      where,
+      orderBy: { scheduledAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      select: {
+        id: true, userId: true, toEmail: true, subject: true, body: true,
+        status: true, scheduledAt: true, sentAt: true,
+        sender: { select: { email: true } },
+      },
+    }),
+    prisma.email.count({ where }),
+  ]);
+  return {
+    data: data.map(({ sender, ...email }) => ({ ...email, senderEmail: sender.email })),
+    total,
+  };
+}
+
 router.get(
   "/search",
   asyncHandler(async (req, res) => {
@@ -114,6 +149,12 @@ router.get(
       return;
     }
     const { q, status, page, limit } = parsed.data;
+    if (!es) {
+      const result = await searchPostgres(req.userId!, q, status, page, limit);
+      res.json({ ...result, page, limit });
+      return;
+    }
+
     const filter: estypes.QueryDslQueryContainer[] = [{ term: { userId: req.userId! } }];
     if (status) {
       filter.push({
@@ -121,7 +162,8 @@ router.get(
       });
     }
 
-    const result = await es.search({
+    try {
+      const result = await es.search({
       index: EMAIL_INDEX,
       from: (page - 1) * limit,
       size: limit,
@@ -140,10 +182,15 @@ router.get(
         },
       },
       ...(q ? {} : { sort: [{ scheduledAt: "desc" as const }] }),
-    });
+      });
 
-    const total = typeof result.hits.total === "number" ? result.hits.total : result.hits.total?.value ?? 0;
-    res.json({ data: result.hits.hits.map((hit) => hit._source), total, page, limit });
+      const total = typeof result.hits.total === "number" ? result.hits.total : result.hits.total?.value ?? 0;
+      res.json({ data: result.hits.hits.map((hit) => hit._source), total, page, limit });
+    } catch (error) {
+      console.error("ES search failed, using Postgres:", error instanceof Error ? error.message : error);
+      const fallback = await searchPostgres(req.userId!, q, status, page, limit);
+      res.json({ ...fallback, page, limit });
+    }
   })
 );
 export default router;
