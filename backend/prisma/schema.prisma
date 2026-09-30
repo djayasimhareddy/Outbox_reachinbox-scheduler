@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EmailStatus {
+  SCHEDULED
+  PROCESSING
+  SENT
+  FAILED
+}
+
+model User {
+  id              String   @id @default(uuid())
+  googleId        String   @unique
+  email           String   @unique
+  name            String
+  avatar          String?
+  slackWebhookUrl String?
+  createdAt       DateTime @default(now())
+  senders         Sender[]
+  emails          Email[]
+}
+
+model Sender {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  email     String
+  smtpHost  String
+  smtpPort  Int
+  smtpUser  String
+  smtpPass  String
+  createdAt DateTime @default(now())
+  emails    Email[]
+
+  @@unique([userId, email])
+}
+
+model Email {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  senderId    String
+  sender      Sender      @relation(fields: [senderId], references: [id])
+  toEmail     String
+  subject     String
+  body        String
+  scheduledAt DateTime
+  status      EmailStatus @default(SCHEDULED)
+  hourlyLimit Int
+  sentAt      DateTime?
+  messageId   String?
+  error       String?
+  createdAt   DateTime    @default(now())
+
+  @@index([userId, status, scheduledAt])
+}
